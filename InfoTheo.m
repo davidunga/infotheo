@@ -14,7 +14,7 @@ classdef InfoTheo
                 arg
                 options.norm = false
             end
-            
+
             arg = arg(:);
 
             if iscategorical(arg) || all(round(arg) == arg)
@@ -30,7 +30,7 @@ classdef InfoTheo
             if options.norm
                 H = H/log2(numel(p));
             end
-            
+
         end
 
         function [I,H,Hj] = MI(jd)
@@ -42,7 +42,7 @@ classdef InfoTheo
             % OUTPUT:
             %   I - mutual information / total correlation
             %   H - vector. H(i) is the entropy of the i-th variable.
-            %   Hj - scalar. the joint entropy of all variables     
+            %   Hj - scalar. the joint entropy of all variables
 
             if ~isa(jd,'JointDistrib')
                 jd = JointDistrib(jd);
@@ -54,31 +54,31 @@ classdef InfoTheo
             end
             Hj = InfoTheo.Entropy(jd.joint(:));
             I = sum(H) - Hj;
-            
+
         end
-        
+
 
         function kl = KLDiv(P,Q,options)
-        	% KL-Divergence
+            % KL-Divergence
             % P,Q - matrices s.t. each row is a distribution (sums to 1)
             %
             % kl = KLDiv(P,Q) returns a size(P,1)*size(Q,1) matrix, such
             %   that kl(i,j) is the KLDiv between P(i,:) & Q(j,:)
             %
-            % kl = KLDiv(P,Q,rows=true) returns a vector such that kl(i) is 
+            % kl = KLDiv(P,Q,rows=true) returns a vector such that kl(i) is
             %   the KLDiv between P(i,:) & Q(i,:). P & Q must be the same size.
-            
-            arguments
-				P (:,:) double
-				Q (:,:) double
-				options.rows (1,1) logical = false
-			end
 
-			assert(size(P,2)==size(Q,2));
+            arguments
+                P (:,:) double
+                Q (:,:) double
+                options.rows (1,1) logical = false
+            end
+
+            assert(size(P,2)==size(Q,2));
 
             P(P==0) = eps;
             Q(Q==0) = eps;
-            
+
             if options.rows
                 assert(size(P,1)==size(Q,1));
                 kl = nan([size(P,1),1]);
@@ -104,18 +104,18 @@ classdef InfoTheo
             % js = JSDiv(P,Q) returns a size(P,1)*size(Q,1) matrix, such
             %   that js(i,j) is the JSDiv between P(i,:) & Q(j,:)
             %
-            % js = JSDiv(P,Q,rows=true) returns a vector such that js(i) is 
+            % js = JSDiv(P,Q,rows=true) returns a vector such that js(i) is
             %   the JSDiv between P(i,:) & Q(i,:). P & Q must be the same size.
             arguments
-				P (:,:) double
-				Q (:,:) double
-				options.rows (1,1) logical = false
+                P (:,:) double
+                Q (:,:) double
+                options.rows (1,1) logical = false
             end
             options = namedargs2cell(options);
             js = .5 * (InfoTheo.KLDiv(P,Q,options{:}) + InfoTheo.KLDiv(Q,P,options{:}));
         end
-        
-        
+
+
         function c1 = EntropyBias(N,K)
             % The first correction term for an entropy that was computed over N samples, for a domain size K.
             % This is the bias that results from estimating a probability P(k), {k=1,2,..K},
@@ -129,7 +129,7 @@ classdef InfoTheo
             %
             % OUTPUT:
             %   c1. The first correction term, i.e.: H_true = H_naive + c1 (+c2,..)
-            
+
             if nargin==1
                 K = length(unique(N));
                 N = length(N);
@@ -138,5 +138,5 @@ classdef InfoTheo
         end
 
     end
-    
+
 end

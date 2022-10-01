@@ -64,35 +64,35 @@ jsdist = ones(1,Nx) + epsln ;
 itr = 0;
 while any(jsdist > epsln) && itr < maxItr
     % While update of P(t|x) is still significant
-    
+
     itr = itr+1; % iteration counter
-    
+
     % Save current P(t|x) to be compared to P(t|x) after iteration:
     p_t_given_x_prev = p_t_given_x ;
-    
+
     % ---------------------------------------------------------------------
     % Compute new estimates:
-    
+
     % KL-Dist between P(y|x) and P(y|t) :
     kldist = InfoTheo.KLDiv(p_y_given_x,p_y_given_t);
-    
+
     % Update P(t|x) according to P(t|x) = P(t)*exp(-beta*kldist) :
     p_t_given_x = repmat( p_t', Nx , 1 ) .* exp(-beta*kldist);
     p_t_given_x = p_t_given_x ./ repmat( sum(p_t_given_x,2) , 1, Nt ) ;
-    
+
     % P(t):
     p_t = p_t_given_x'*px ;
     p_t = p_t ./ sum(p_t); % (re-normalize to avoid numerical issues)
-    
+
     % P(y|t):
     p_y_given_t = (pxy'*p_t_given_x)' ./ repmat( p_t , 1 , Ny );
-    
+
     % ---------------------------------------------------------------------
     % Test convergence:
-    
+
     % Compare P(t|x) before and after this iteration took place:
     jsdist = InfoTheo.JSDiv(p_t_given_x,p_t_given_x_prev,rows=true);
-    
+
 end
 
 % Rename clusters according to their size, cluster 1 is the largest:
@@ -111,8 +111,3 @@ clusterSize = hist(mxj,1:nClusters);
 [~,si] = sort(clusterSize,'descend');
 p_t_given_x = p_t_given_x(:,si);
 end
-
-
-
-
-

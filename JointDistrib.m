@@ -1,6 +1,6 @@
 classdef JointDistrib
     % Handle frequency-based joint distribution
-    
+
     properties
         domains = {};   % domains{i} = vector of possible values of i-th variable
         joint = [];     % joint distribution matrix, size = length(domains{1}) x length(domains{2}) x ..
@@ -44,7 +44,7 @@ classdef JointDistrib
                 joint_counts(sub2ind(size(joint_counts), ixs{:})) = sum(ii);
                 open_rows = open_rows(~ii);
             end
-            
+
             obj.n = sum(joint_counts(:));
             obj.joint = joint_counts / obj.n;
             obj.marginals = cell(1,num_vars);
