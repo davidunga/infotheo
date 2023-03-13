@@ -1,7 +1,7 @@
 ## InfoTheo
 Python implementations of Information Bottleneck with Side Information (Chechik & Tishby), + basic information theory functionalities.
 
-Information Bottleneck with Side Information is an extension of Information Bottleneck (Tishby, Pereira, & Bialek) . <br>
+Information Bottleneck with Side Information is an extension of Information Bottleneck method (Tishby, Pereira, & Bialek). <br>
 Given a random variable $X$ and target variables $Y_1$ & $Y_2$, with known joint distributions $P(X,Y_1)$ & $P(X,Y_2)$,
 Information Bottleneck with Side Information aims to map $X$ to a compressed varibale $T$, while retaining 
 information about $Y_1$, and minimizing information about $Y_2$. Formally, minimizing the cost:

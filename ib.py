@@ -8,7 +8,7 @@ from probabilities import normalize_proba, raise_invalid_proba
 from tools import random_scope
 
 
-def aib(pxys, betas=None, normalize_betas=False):
+def aib(pxys, betas, normalize_betas=False):
     """
     Agglomerative Information Bottleneck with side information.
     Args:
@@ -20,22 +20,13 @@ def aib(pxys, betas=None, normalize_betas=False):
     Returns:
         clusters: list of size = |X|, clusters[k][i] is the cluster label of X=xi for nClusters=k
         costs: costs[k] is the cost of splitting k-1 clusters into k clusters
+    Usage:
+        aib(pxy, b) yields hierarchical clustering of X to T, which aims to minimize: L = I(X;T) - b*I(X;Y),
+        aib([pxy1, pxy2, ..], betas=[b1, b2, ..], ..) yields hierarchical clustering of X to T, which aims to minimize:
+            L = I(X;T) - (b1*I(X;Y1) + b2*I(X;Y2) + ..)
     """
 
-    if betas is None:
-        betas = 1.0
-
-    if not isinstance(pxys, list):
-        pxys = [pxys.copy()]
-        betas = [betas]
-    else:
-        pxys = [pxy.copy() for pxy in pxys]
-
-    if np.max([measures.jsdiv(pxys[0].sum(axis=1), pxy.sum(axis=1)) for pxy in pxys]) > np.finfo(float).eps:
-        raise ValueError("At least two of the P(X,Y)'s have different marginal distribution P(x)")
-
-    if normalize_betas:
-        betas = _normalize_betas(pxys, betas)
+    pxys, betas, _ = _process_inputs(pxys, betas, normalize_betas)
 
     def _cluster_dist(ci, cj):
         px_i = pxys[0][ci].sum()
@@ -112,9 +103,10 @@ def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
     if rand_seed:
         np.random.seed(rand_seed)
 
-    if not isinstance(pxys, list):
-        betas = [betas]
-        pxys = [pxys]
+    pxys, betas, px = _process_inputs(pxys, betas, normalize_betas)
+
+    if len(px) < Nt:
+        raise ValueError(f"Number of clusters ({Nt}) exceeds X domain size ({len(px)})")
 
     def _calc_ys_given_x(p_t_given_x, pt):
         return [normalize_proba(((pxy.T @ p_t_given_x) / pt).T) for pxy in pxys]
@@ -124,21 +116,6 @@ def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
         for beta, p_y_given_t in zip(betas, p_ys_given_t):
             cost -= beta * measures.mi(p_y_given_t * pt[:, None])
         return cost
-
-    px = pxys[0].sum(axis=1)
-
-    if len(px) < Nt:
-        raise ValueError(f"Number of clusters ({Nt}) exceeds X domain size ({len(px)})")
-
-    if np.max([measures.jsdiv(px, pxy.sum(axis=1)) for pxy in pxys]) > np.finfo(float).eps:
-        raise ValueError("At least two of the P(X,Y)'s have different marginal distribution P(x)")
-
-    raise_invalid_proba(px, msg_prefix="Px")
-    for i in range(len(pxys)):
-        raise_invalid_proba(pxys[i], msg_prefix=f"Pxy[{i}]")
-
-    if normalize_betas:
-        betas = _normalize_betas(pxys, betas)
 
     # init P(t|x) as uniform + small perturbation:
     p_t_given_x = normalize_proba(.5 + 2 * init_noise * (np.random.random((len(px), Nt)) - .5))
@@ -222,3 +199,31 @@ def _normalize_betas(pxys, betas):
         Hy = measures.entropy(pxys[i].sum(axis=0))
         betas[i] *= Hx / Hy
     return betas
+
+
+def _process_inputs(pxys, betas, normalize_betas):
+    """ Validate input and bring it to the required form """
+
+    if not isinstance(pxys, list):
+        if not isinstance(betas, (float, int)):
+            raise ValueError("Invalid type for beta: Should be scalar float.")
+        pxys = [pxys.copy()]
+        betas = [betas]
+    else:
+        if not hasattr(betas, '__len__') or len(betas) != len(pxys):
+            raise ValueError("Betas should be a list of the same length as pxys")
+        pxys = [pxy.copy() for pxy in pxys]
+
+    px = pxys[0].sum(axis=1)
+
+    raise_invalid_proba(px, msg_prefix="Px")
+    for i in range(len(pxys)):
+        raise_invalid_proba(pxys[i], msg_prefix=f"Pxy[{i}]")
+
+    if np.max([measures.jsdiv(px, pxy.sum(axis=1)) for pxy in pxys]) > np.finfo(float).eps:
+        raise ValueError("At least two of the P(X,Y)'s have different marginal distribution P(x)")
+
+    if normalize_betas:
+        betas = _normalize_betas(pxys, betas)
+
+    return pxys, betas, px
