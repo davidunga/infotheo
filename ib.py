@@ -8,26 +8,34 @@ from probabilities import normalize_proba, raise_invalid_proba
 from tools import random_scope
 
 
-def aib(pxys, betas=None):
+def aib(pxys, betas=None, normalize_betas=False):
     """
     Agglomerative Information Bottleneck with side information.
     Args:
         pxys: either a 2d array such that pxy[i,j] = P(x=i,y=j), or a list of such arrays
         betas: either a scalar (if pxys is not a list), or a list such that betas[i] corresponds to pxys[i].
+        normalize_betas: rescale each beta to normalize mutual information cost elements.
+            i.e., given the cost: L = MI(X;T) - beta_1 * MI(X;Y1) - beta_2 * MI(X;Y2) ..
+            Scales each beta to normalize its corresponding MI term: beta_i <- beta_i * H(X) / H(Y_i)
     Returns:
         clusters: list of size = |X|, clusters[k][i] is the cluster label of X=xi for nClusters=k
         costs: costs[k] is the cost of splitting k-1 clusters into k clusters
     """
 
+    if betas is None:
+        betas = 1.0
+
     if not isinstance(pxys, list):
         pxys = [pxys.copy()]
+        betas = [betas]
     else:
         pxys = [pxy.copy() for pxy in pxys]
 
-    if betas is None:
-        betas = [1.0 for _ in pxys]
+    if np.max([measures.jsdiv(pxys[0].sum(axis=1), pxy.sum(axis=1)) for pxy in pxys]) > np.finfo(float).eps:
+        raise ValueError("At least two of the P(X,Y)'s have different marginal distribution P(x)")
 
-    n = len(pxys[0])
+    if normalize_betas:
+        betas = _normalize_betas(pxys, betas)
 
     def _cluster_dist(ci, cj):
         px_i = pxys[0][ci].sum()
@@ -39,6 +47,7 @@ def aib(pxys, betas=None):
             cost += beta * measures.jsdiv(pxy[ci] / px_i, pxy[cj] / px_j)
         return (px_i + px_j) * cost
 
+    n = len(pxys[0])
     d = np.zeros((n, n), float) + np.Inf
     for i in range(n - 1):
         for j in range(i + 1, n):
@@ -72,7 +81,7 @@ def aib(pxys, betas=None):
 
 @random_scope
 def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
-        normalize_betas=True, beta_search=True, init_noise=.1):
+        normalize_betas=False, beta_search=True, init_noise=.1):
     """
     Iterative Information Bottleneck with side information.
     Given distributions: P(X), P(X,Y1) <, P(X,Y2), P(X,Y3), ..> and corresponding betas: b1, <, b2, b3, ..>,
@@ -103,7 +112,7 @@ def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
     if rand_seed:
         np.random.seed(rand_seed)
 
-    if not hasattr(betas, '__len__'):
+    if not isinstance(pxys, list):
         betas = [betas]
         pxys = [pxys]
 
@@ -129,10 +138,7 @@ def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
         raise_invalid_proba(pxys[i], msg_prefix=f"Pxy[{i}]")
 
     if normalize_betas:
-        Hx = measures.entropy(px)
-        for i in range(len(betas)):
-            Hy = measures.entropy(pxys[i].sum(axis=0))
-            betas[i] *= Hx / Hy
+        betas = _normalize_betas(pxys, betas)
 
     # init P(t|x) as uniform + small perturbation:
     p_t_given_x = normalize_proba(.5 + 2 * init_noise * (np.random.random((len(px), Nt)) - .5))
@@ -209,3 +215,10 @@ def _iib_beta_binary_search(pxys, betas, **kwargs):
 
     return probas, optim
 
+
+def _normalize_betas(pxys, betas):
+    Hx = measures.entropy(pxys.sum(axis=1))
+    for i in range(len(betas)):
+        Hy = measures.entropy(pxys[i].sum(axis=0))
+        betas[i] *= Hx / Hy
+    return betas
