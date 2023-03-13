@@ -154,6 +154,17 @@ def iib(pxys, betas, Nt, max_itrs=1000, converge_eps=1e-12, rand_seed=None,
 
 
 def _iib_beta_binary_search(pxys, betas, **kwargs):
+    """
+    iIB with beta scale search.
+    Given {P(X,Y)} and {beta}, seeks a global scaling factor to apply to the betas, with the aim of
+    obtaining non-trivial compression results. This factor can be viewed as the scale of the MI elements
+    in the given problem.
+    Method:
+    The method is based on the observation that the convergence of P(T|X), quantified as JS[P(T|X_k) | P(T|X_k-1)],
+    has no local extrema (is trivial), when the compression problem is trivial, i.e. when the betas are
+    too small or too large, in relation to the MI terms. This function therefore seeks a factor which yields
+    non-trivial convergence, and is close as possible to 1.
+    """
 
     kwargs['beta_search'] = False
 
@@ -194,7 +205,7 @@ def _iib_beta_binary_search(pxys, betas, **kwargs):
 
 
 def _normalize_betas(pxys, betas):
-    Hx = measures.entropy(pxys.sum(axis=1))
+    Hx = measures.entropy(pxys[0].sum(axis=1))
     for i in range(len(betas)):
         Hy = measures.entropy(pxys[i].sum(axis=0))
         betas[i] *= Hx / Hy

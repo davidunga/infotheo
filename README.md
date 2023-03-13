@@ -15,6 +15,10 @@ L = I(X;T) - \sum_i^N \beta_i I(T;Y_i)
 Where $\beta_i$ are scalars determining the compression/information tradeoff. <br>
 Implemented here are the Iterative (soft clustering), and the Agglomerative (hard, hierarchical clustering) variants.
 
+## Usage:
+Main functions are aib (agglomerative IB) and iib (iterative IB) in ib.py. <br>
+See /tests/test_ib.py for test examples.
+
 ## Papers 
 - Tishby, Naftali, Fernando C. Pereira, and William Bialek. "The information bottleneck method." arXiv preprint physics/0004057 (2000).
 - Slonim, Noam, and Naftali Tishby. "Agglomerative information bottleneck." Advances in neural information processing systems 12 (1999).
