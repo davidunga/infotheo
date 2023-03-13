@@ -2,10 +2,10 @@
 Information Bottleneck
 """
 
-import measures
 import numpy as np
-from probabilities import normalize_proba, raise_invalid_proba
-from tools import random_scope
+from infotheo import measures
+from infotheo.probabilities import normalize_proba, raise_invalid_proba
+from infotheo.tools import random_scope
 
 
 def aib(pxys, betas, normalize_betas=False):

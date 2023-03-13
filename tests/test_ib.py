@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tools import random_scope, clusters2proba
-import ib
+from infotheo.tools import random_scope, clusters2proba
+from infotheo import ib
 
 
 @random_scope

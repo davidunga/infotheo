@@ -1,8 +1,8 @@
 import numpy as np
-import measures
+from infotheo import measures
 import matplotlib.pyplot as plt
-from tools import random_scope
-from probabilities import calc_distributions
+from infotheo.tools import random_scope
+from infotheo.probabilities import calc_distributions
 
 
 def test_entropy():

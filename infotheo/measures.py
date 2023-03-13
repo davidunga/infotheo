@@ -5,7 +5,7 @@ Functions in this module operate only on pre-computed probability distributions.
 
 
 import numpy as np
-from probabilities import raise_invalid_proba
+from infotheo.probabilities import raise_invalid_proba
 
 
 def kldiv(p, q, axis=None):
