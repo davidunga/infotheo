@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 
 
 class InvalidProbability(Exception):
@@ -35,10 +36,12 @@ def calc_distributions(xs, ys, xbins, ybins):
             pxys: dict of 2d arrays. pxys[(i,j)] is an array representation of P(xs[i] | ys[j])
             pxs: list of 1d arrays, pxs[i] is the marginal distribution P(xs[i])
             pys: list of 1d arrays, pys[i] is the marginal distribution P(ys[i])
+            bins: dict of x and y bins
         if xs, ys are nparrays:
             pxys: 2d array of P(xs | ys)
             pxs: 1d array the marginal distribution P(xs)
             pys: 1d array the marginal distribution P(ys)
+            bins: dict of x and y bins
     """
 
     assert isinstance(xs, list) == isinstance(ys, list)
@@ -46,11 +49,16 @@ def calc_distributions(xs, ys, xbins, ybins):
     if not multi_input:
         xs, ys = [xs], [ys]
 
-    pxys = {}
-    for i, x in enumerate(xs):
-        for j, y in enumerate(ys):
-            joint_counts, xbins, ybins = np.histogram2d(x, y, [xbins, ybins])
-            pxys[(i, j)] = joint_counts / joint_counts.sum()
+    def _make_bins(vs, n):
+        mx = float(np.max([v.max() for v in vs]))
+        mn = float(np.min([v.min() for v in vs]))
+        return np.linspace(mn - 1e-16, mx + 1e-16, n + 1)
+
+    if isinstance(xbins, int):  xbins = _make_bins(xs, xbins)
+    if isinstance(ybins, int):  ybins = _make_bins(ys, ybins)
+
+    pxys = {(i, j): np.histogram2d(x, y, [xbins, ybins])[0] / len(x)
+            for (i, x), (j, y) in product(enumerate(xs), enumerate(ys))}
 
     pxs = [pxys[(i, 0)].sum(axis=1) for i in range(len(xs))]
     pys = [pxys[(0, j)].sum(axis=0) for j in range(len(ys))]
@@ -62,8 +70,9 @@ def calc_distributions(xs, ys, xbins, ybins):
     for pxy in pxys.values():
         raise_invalid_proba(pxy)
 
+    bins = {'x': xbins, 'y': ybins}
     if multi_input:
-        return pxys, pxs, pys
+        return pxys, pxs, pys, bins
     else:
         assert len(pxys) == len(pxs) == len(pys) == 1
-        return pxys[(0, 0)], pxs[0], pys[0]
+        return pxys[(0, 0)], pxs[0], pys[0], bins

@@ -24,11 +24,12 @@ def test_mi():
     x = np.clip(np.random.standard_normal(10_000), -d, d)
     noise = np.clip(np.random.standard_normal(10_000), -d, d)
     sigs = np.linspace(0, 5, 100)
+    bins = np.linspace(-d, d, 11)
 
     mi, Hx, Hy = [], [], []
     for sig in sigs:
         y = np.clip(x + sig * noise, -d, d)
-        pxy, px, py = calc_distributions(x, y, np.linspace(-d, d, 10), np.linspace(-d, d, 10))
+        pxy, px, py, _ = calc_distributions(x, y, bins, bins)
 
         Hx.append(measures.entropy(px))
         Hy.append(measures.entropy(py))
