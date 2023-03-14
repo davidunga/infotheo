@@ -28,7 +28,7 @@ def test_mi():
     mi, Hx, Hy = [], [], []
     for sig in sigs:
         y = np.clip(x + sig * noise, -d, d)
-        pxy, px, py = calc_distributions([x, y], [np.linspace(-d, d, 10), np.linspace(-d, d, 10)])
+        pxy, px, py = calc_distributions(x, y, np.linspace(-d, d, 10), np.linspace(-d, d, 10))
 
         Hx.append(measures.entropy(px))
         Hy.append(measures.entropy(py))
