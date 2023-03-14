@@ -24,44 +24,32 @@ def normalize_proba(x: np.ndarray):
 
 def calc_distributions(xs, ys, xbins, ybins):
     """
-    Joint and marginal distributions.
-    Given lists of X and Y values, computes the pairwise joint distribution of every x~X,y~Y pairs.
+    pairwise-joint and marginal distributions.
     Args:
-        xs: an array of X values, or a list of such arrays
-        ys: Y values, given in the same format as xs
+        xs: 2d ndarray, where each column corresponds to an X variable
+        ys: 2d ndarray, where each column corresponds to a Y variable
         xbins: x bin edges, or number of bins
         ybins: y bin edges, or number of bins
     Returns:
-        if xs, ys were given as a list of nparrays:
-            pxys: dict of 2d arrays. pxys[(i,j)] is an array representation of P(xs[i] | ys[j])
-            pxs: list of 1d arrays, pxs[i] is the marginal distribution P(xs[i])
-            pys: list of 1d arrays, pys[i] is the marginal distribution P(ys[i])
-            bins: dict of x and y bins
-        if xs, ys are nparrays:
-            pxys: 2d array of P(xs | ys)
-            pxs: 1d array the marginal distribution P(xs)
-            pys: 1d array the marginal distribution P(ys)
-            bins: dict of x and y bins
+        pxys: dict of 2d arrays. pxys[(i, j)] is an array representation of P(xs[:, i] | ys[:, j])
+        pxs: list of 1d arrays, pxs[i] is the marginal distribution P(xs[:, i])
+        pys: list of 1d arrays, pys[j] is the marginal distribution P(ys[:, j])
+        bins: dict of x and y bins
     """
 
-    assert isinstance(xs, list) == isinstance(ys, list)
-    multi_input = isinstance(xs, list)
-    if not multi_input:
-        xs, ys = [xs], [ys]
+    if xs.ndim == 1: xs = xs[:, None]
+    if ys.ndim == 1: ys = ys[:, None]
 
-    def _make_bins(vs, n):
-        mx = float(np.max([v.max() for v in vs]))
-        mn = float(np.min([v.min() for v in vs]))
-        return np.linspace(mn - 1e-16, mx + 1e-16, n + 1)
+    assert xs.ndim == ys.ndim == 2
 
-    if isinstance(xbins, int):  xbins = _make_bins(xs, xbins)
-    if isinstance(ybins, int):  ybins = _make_bins(ys, ybins)
+    if isinstance(xbins, int):  xbins = np.linspace(xs.min() - 1e-16, xs.max() + 1e-16, xbins + 1)
+    if isinstance(ybins, int):  ybins = np.linspace(ys.min() - 1e-16, ys.max() + 1e-16, ybins + 1)
 
     pxys = {(i, j): np.histogram2d(x, y, [xbins, ybins])[0] / len(x)
-            for (i, x), (j, y) in product(enumerate(xs), enumerate(ys))}
+            for (i, x), (j, y) in product(enumerate(xs.T), enumerate(ys.T))}
 
-    pxs = [pxys[(i, 0)].sum(axis=1) for i in range(len(xs))]
-    pys = [pxys[(0, j)].sum(axis=0) for j in range(len(ys))]
+    pxs = [pxys[(i, 0)].sum(axis=1) for i in range(xs.shape[1])]
+    pys = [pxys[(0, j)].sum(axis=0) for j in range(ys.shape[1])]
 
     for px in pxs:
         raise_invalid_proba(px)
@@ -71,8 +59,5 @@ def calc_distributions(xs, ys, xbins, ybins):
         raise_invalid_proba(pxy)
 
     bins = {'x': xbins, 'y': ybins}
-    if multi_input:
-        return pxys, pxs, pys, bins
-    else:
-        assert len(pxys) == len(pxs) == len(pys) == 1
-        return pxys[(0, 0)], pxs[0], pys[0], bins
+    return pxys, pxs, pys, bins
+

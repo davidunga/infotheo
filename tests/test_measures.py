@@ -31,9 +31,9 @@ def test_mi():
         y = np.clip(x + sig * noise, -d, d)
         pxy, px, py, _ = calc_distributions(x, y, bins, bins)
 
-        Hx.append(measures.entropy(px))
-        Hy.append(measures.entropy(py))
-        mi.append(measures.mi(pxy))
+        Hx.append(measures.entropy(px[0]))
+        Hy.append(measures.entropy(py[0]))
+        mi.append(measures.mi(pxy[(0, 0)]))
 
     plt.plot(sigs, mi, label="MI")
     plt.plot(sigs, Hx, label="Hx")
