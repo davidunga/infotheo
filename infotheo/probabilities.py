@@ -42,3 +42,26 @@ def calc_proba(xs, bins):
 
 def get_marginals(p):
     return [p.sum(axis=tuple(np.nonzero(np.arange(p.ndim) != a)[0])) for a in range(p.ndim)]
+
+
+def make_joint_variable(xs, bins, norm=False):
+    """
+    Construct variable Z ~ (X1, X2, ..)
+    Args:
+        xs: list of 1d np arrays, all of the same length, xs = [x1, x2, ..]
+        bins: list, bin spec for each x in xs
+        norm: if True, normalizes the values of the joint variable to be between 0 and 1. If False (default),
+            values are between 0 and (len(bins[0]) * len(bins[1]) * ..) - 1.
+    Returns:
+        an array, same size as x1
+    """
+    multi_index = []
+    for j in range(len(xs)):
+        if isinstance(bins[j], int):
+            bins[j] = np.linspace(np.min(xs[j]) - 1e-12, np.max(xs[j]) + 1e-12, bins[j] + 1)
+        multi_index.append(np.digitize(xs[j], bins[j]) - 1)
+    dims = [len(b) - 1 for b in bins]
+    z = np.ravel_multi_index(multi_index, dims=dims)
+    if norm:
+        z = z.astype(float) / (np.prod(dims) - 1)
+    return z
