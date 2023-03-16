@@ -5,7 +5,7 @@ Functions in this module operate only on pre-computed probability distributions.
 
 
 import numpy as np
-from infotheo.probabilities import raise_invalid_proba
+from infotheo.probabilities import raise_invalid_proba, get_marginals
 
 
 def kldiv(p, q, axis=None):
@@ -30,7 +30,7 @@ def kldiv(p, q, axis=None):
     mask = (p > 0) & (q > 0)
     assert np.all(q[mask] > 0)
     lg = np.zeros_like(p)
-    lg[mask] = np.log(p[mask] / q[mask])
+    lg[mask] = np.log2(p[mask] / q[mask])
     return np.sum(p * lg, axis=axis)
 
 
@@ -47,13 +47,25 @@ def entropy(p, axis=None):
     """
     raise_invalid_proba(p, axis=axis)
     log_p = np.zeros_like(p)
-    log_p[p > 0] = np.log(p[p > 0])
+    log_p[p > 0] = np.log2(p[p > 0])
     return -np.sum(p * log_p, axis=axis)
 
 
-def mi(pxy):
+def mi(p):
     """
-    Mutual information of joint distribution, pxy[i,j] = P(X=xi,Y=yj)
+    Mutual information / Multi Information of joint distribution P(X,Y,..)
     """
-    px_py = pxy.sum(axis=1, keepdims=True) @ pxy.sum(axis=0, keepdims=True)
-    return kldiv(pxy.flatten(), px_py.flatten())
+    return np.sum(entropy(p_) for p_ in get_marginals(p)) - entropy(p)
+
+
+def cond_mi(pxyz):
+    """
+    Conditional mutual information - I(X;Y|Z)
+    Args:
+        pxyz: 3d np array, pxyz[i,j,k] = P(X=xi, Y=yj, Z=zk)
+    """
+    Hxyz = entropy(pxyz)
+    Hxz = entropy(pxyz.sum(axis=1))
+    Hyz = entropy(pxyz.sum(axis=0))
+    Hz = entropy(pxyz.sum(axis=(0, 1)))
+    return Hxz + Hyz - Hxyz - Hz
